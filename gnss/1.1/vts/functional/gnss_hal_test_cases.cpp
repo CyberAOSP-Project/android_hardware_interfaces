@@ -211,6 +211,8 @@ TEST_F(GnssHalTest, BlacklistIndividualSatellites) {
     EXPECT_GE((int)list_gnss_sv_status_.size() + 1, kLocationsToAwait);
     ALOGD("Observed %d GnssSvStatus, while awaiting %d Locations (%d received)",
           (int)list_gnss_sv_status_.size(), kLocationsToAwait, location_called_count_);
+    ALOGD("Observed %d GnssSvStatus, while awaiting %d Locations", (int)list_gnss_sv_status_.size(),
+          kLocationsToAwait);
 
     /*
      * Identify strongest SV seen at least kLocationsToAwait -1 times
@@ -257,6 +259,11 @@ TEST_F(GnssHalTest, BlacklistIndividualSatellites) {
     EXPECT_GE((int)list_gnss_sv_status_.size() + 1, kLocationsToAwait);
     ALOGD("Observed %d GnssSvStatus, while awaiting %d Locations (%d received)",
           (int)list_gnss_sv_status_.size(), kLocationsToAwait, location_called_count_);
+
+    // Tolerate 1 less sv status to handle edge cases in reporting.
+    EXPECT_GE((int)list_gnss_sv_status_.size() + 1, kLocationsToAwait);
+    ALOGD("Observed %d GnssSvStatus, while awaiting %d Locations", (int)list_gnss_sv_status_.size(),
+          kLocationsToAwait);
     for (const auto& gnss_sv_status : list_gnss_sv_status_) {
         for (uint32_t iSv = 0; iSv < gnss_sv_status.numSvs; iSv++) {
             const auto& gnss_sv = gnss_sv_status.gnssSvList[iSv];
@@ -279,6 +286,8 @@ TEST_F(GnssHalTest, BlacklistIndividualSatellites) {
     while (!strongest_sv_is_reobserved && (unblacklist_loops_remaining-- > 0)) {
         StopAndClearLocations();
         list_gnss_sv_status_.clear();
+    StopAndClearLocations();
+    list_gnss_sv_status_.clear();
 
         StartAndCheckLocations(kLocationsToAwait);
 
@@ -304,6 +313,21 @@ TEST_F(GnssHalTest, BlacklistIndividualSatellites) {
                     strongest_sv_is_reobserved = true;
                     break;
                 }
+
+    // Tolerate 1 less sv status to handle edge cases in reporting.
+    EXPECT_GE((int)list_gnss_sv_status_.size() + 1, kLocationsToAwait);
+    ALOGD("Observed %d GnssSvStatus, while awaiting %d Locations", (int)list_gnss_sv_status_.size(),
+          kLocationsToAwait);
+
+    bool strongest_sv_is_reobserved = false;
+    for (const auto& gnss_sv_status : list_gnss_sv_status_) {
+        for (uint32_t iSv = 0; iSv < gnss_sv_status.numSvs; iSv++) {
+            const auto& gnss_sv = gnss_sv_status.gnssSvList[iSv];
+            if ((gnss_sv.svid == source_to_blacklist.svid) &&
+                (gnss_sv.constellation == source_to_blacklist.constellation) &&
+                (gnss_sv.svFlag & IGnssCallback::GnssSvFlags::USED_IN_FIX)) {
+                strongest_sv_is_reobserved = true;
+                break;
             }
             if (strongest_sv_is_reobserved) break;
         }
@@ -331,6 +355,8 @@ TEST_F(GnssHalTest, BlacklistConstellation) {
     EXPECT_GE((int)list_gnss_sv_status_.size() + 1, kLocationsToAwait);
     ALOGD("Observed %d GnssSvStatus, while awaiting %d Locations (%d received)",
           (int)list_gnss_sv_status_.size(), kLocationsToAwait, location_called_count_);
+    ALOGD("Observed %d GnssSvStatus, while awaiting %d Locations", (int)list_gnss_sv_status_.size(),
+          kLocationsToAwait);
 
     // Find first non-GPS constellation to blacklist
     GnssConstellationType constellation_to_blacklist = GnssConstellationType::UNKNOWN;
